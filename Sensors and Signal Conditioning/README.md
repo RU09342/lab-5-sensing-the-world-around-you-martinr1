@@ -34,37 +34,37 @@ P9.7 = green LED
 
 Below are concise descriptions for each of the listed "void" functions within the code (both MSP430 boards):
 
-```
-void init_led(); = Initializes LED pins.
-```
 
-```
-void init_uart(); = Initializes UART pins and sets baud rate as 9600. Enables the TX interrupt for the MSP430G2553. For the MSP430FR6989 the TX interrupt is enabled only after the ADC is not busy converting its measured values.
-```
+>void init_led(); = Initializes LED pins.
 
-```
-void init_timer(); = Initializes the internal clock for controlling the speed of the ADC conversions and UART transmissions. the Timer0_A0 interrupt is enabled.
-```
 
-```
-void init_adc(); = Initializes the ADC and sets the input channel as A3, or P1.3, for the MSP430G2553. The ADC10 is turned on and enabled, but conversions are not yet started.
-```
 
-```
-void start_conversion(); = An if-statement waits for the ADC to be done converting before toggling the green LED. The value in ADC10 is converted, and the very previous ADC value is stored into an address register by the unsigned volatile int latest_adc_result. For the MSP430FR6989 there is no latest_adc_result variable, and instead the ADC12MCTL0 memory register is directly fed the ADC12 value, where a variable ADC12MEM0 can be used to represent the very previously stored ADC value.
-```
+>void init_uart(); = Initializes UART pins and sets baud rate as 9600. Enables the TX interrupt for the MSP430G2553. For the MSP430FR6989 the TX interrupt is enabled only after the ADC is not busy converting its measured values.
 
-```
-__interrupt void Timer0_A0(void); = Creates a small if-statement timer that controls the enabling and disabling of the TX interrupt. Currently, the if-statement waits for timer_count to be greater than 1, creating a rapid transmission of ADC values over TX UART to the CoolTerm program. For a 1 second refresh rate in CoolTerm, changing the number from 1 to 16 greatly slows down the rate of values being printed. Within the if-statement, timer_count is reset, the start_conversion() block is performed, and the TX interrupt is enabled. 
-```
 
-```
-__interrupt void USCI0TX_ISR(void); = The red LED is turned on, and a buffer array variable outputs the "Intensity: " characters one at a time as well as the ADC value currently stored in either latest_adc_value or ADC12MEM0. Two while-loops control the individual character-printing by waiting for the TX buffer to be ready for the next character to be transmitted (the "i" int variable is incremented per loop for moving to the next character). Once all characters have been transmitted, the red LED is turned off, and the TX interrupt flag is reset, ready and waiting for the next timer interrupt to activate it.
-```
 
-```
-void main(void); = Turns off watchdog timer, calibrates the clock systems to 1 MHz, and performs the code within init_led(), init_uart(), init_timer(), and init_adc(). Interrupts are initialized, to be enabled/activated later in the code, and the CPU is put to sleep.
-```
+>void init_timer(); = Initializes the internal clock for controlling the speed of the ADC conversions and UART transmissions. the Timer0_A0 interrupt is enabled.
+
+
+
+>void init_adc(); = Initializes the ADC and sets the input channel as A3, or P1.3, for the MSP430G2553. The ADC10 is turned on and enabled, but conversions are not yet started.
+
+
+
+>void start_conversion(); = An if-statement waits for the ADC to be done converting before toggling the green LED. The value in ADC10 is converted, and the very previous ADC value is stored into an address register by the unsigned volatile int latest_adc_result. For the MSP430FR6989 there is no latest_adc_result variable, and instead the ADC12MCTL0 memory register is directly fed the ADC12 value, where a variable ADC12MEM0 can be used to represent the very previously stored ADC value.
+
+
+
+>__interrupt void Timer0_A0(void); = Creates a small if-statement timer that controls the enabling and disabling of the TX interrupt. Currently, the if-statement waits for timer_count to be greater than 1, creating a rapid transmission of ADC values over TX UART to the CoolTerm program. For a 1 second refresh rate in CoolTerm, changing the number from 1 to 16 greatly slows down the rate of values being printed. Within the if-statement, timer_count is reset, the start_conversion() block is performed, and the TX interrupt is enabled. 
+
+
+
+>__interrupt void USCI0TX_ISR(void); = The red LED is turned on, and a buffer array variable outputs the "Intensity: " characters one at a time as well as the ADC value currently stored in either latest_adc_value or ADC12MEM0. Two while-loops control the individual character-printing by waiting for the TX buffer to be ready for the next character to be transmitted (the "i" int variable is incremented per loop for moving to the next character). Once all characters have been transmitted, the red LED is turned off, and the TX interrupt flag is reset, ready and waiting for the next timer interrupt to activate it.
+
+
+
+>void main(void); = Turns off watchdog timer, calibrates the clock systems to 1 MHz, and performs the code within init_led(), init_uart(), init_timer(), and init_adc(). Interrupts are initialized, to be enabled/activated later in the code, and the CPU is put to sleep.
+
 
 
 # Photo-Sensors UART 2-channel ADC
