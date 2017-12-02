@@ -1,97 +1,35 @@
-# MSP430FR6989 Simple LCD Driver
-This library is meant to make writing simple characters to the on-board LCD display of the MSP430FR6989 Launchpad simple.
+# 3-Channel ADC Input LCD Driver
 
-## Dependencies
-* msp430.h
-This header file must be called before calling this one, otherwise you might get errors with certain macros not being defined. 
+This program is loaded onto the MSP430FR6989 to display onto the LCD screen the 4-digit ADC values of 3 different ADC-input pins. These sensors are labeled as S1, S2, and S3 on the LCD screen. This program was originally designed for the 3 photo-sensors. Since only one sensor can be displayed onto the LCD screen at any given time, a refresh rate of about 0.8 seconds cycles through each of the 3 sensors indefinitely. The rightmost 4 digits represent the 4-digit ADC_light value being stored after the measured value has been converted to an ADC12 value (thousands digit, hundreds digit, tens digit, ones digit). 
 
-### Including the library
-All you need to do is add the LCDDriver.c and LCDDriver.h files to your project and in the first few lines of your main file, you need to include the new .h file.
-```c
-#include <msp430.h>
-#include "LCDDriver.h"
+### Installing on MSP430FR6989
+
+The provided main.c code file for the MSP430FR6989 first imports driverlib.h and hal_LCD.h, complements of TI.com's resource codes for this board. The hal_LCD files and the driverlib folder must first be added to the project folder containing the main.c file being compiled in CCS. Then after wiring the 3 sensors to the 3 ADC pins (and to +3.3V Vcc and GND), the program can directly be loaded. Note: the program will take about 1-2 seconds to load characters onto the LCD screen after the program is loaded.
+
+Pins used:
+
+```
+P8.4 = ADC pin for 3rd sensor. Channel A7. Displayed as S3 on the LCD.
+P8.5 = ADC pin for 2nd sensor. Channel A6. Displayed as S2 on the LCD.
+P8.6 = ADC pin for 1st sensor. Channel A5. Displayed as S1 on the LCD.
 ```
 
-## Usage
+### Code-Breakdown
 
-### Functions
-Currently, this library supports one main function which takes in an ASCII Alphanumeric character or space and displays it on the corresponding LCD segment.
-```c
-showChar(char c, int position)
+Below are concise descriptions for each of the listed "void" functions within the code:
+
 ```
-#### Inputs
-+ c is the input ASCII Character which you want to display ('A-Z', 'a-z', '0-9', ' ')
-+ position is which LCD digit you want to put the character on starting with 1 on the left and 6 on the right.
-
-#### Outputs
-If you have a character within the accepted range of ASCII characters, you should see that character pop up on the screen after this line of code is called. If an ASCII character not within the range is passed in, it will turn all segments of that particular digit on to indicate an error. Please reference the [MSP430FR6989 Launch Pad Data Sheet](http://www.ti.com/lit/ug/slau627a/slau627a.pdf) for more information about which registers are being controlled in this library.
-
-### Example
-If you wanted to show whatever character you just received over a UART communication on the right most digit (Digit 6) of the LCD, you could simply add showChar() to your UART ISR.
-```c
-#pragma vector=USCI_A0_VECTOR
-__interrupt void USCI_A0_ISR(void)
-{
-  switch(__even_in_range(UCA0IV,USCI_UART_UCTXCPTIFG))
-  {
-    case USCI_NONE: break;
-    case USCI_UART_UCRXIFG:
-      while(!(UCA0IFG&UCTXIFG));
-      UCA0TXBUF = UCA0RXBUF;    // Echo back the character received
-      showChar((UCA0RXBUF & 0x00FF), 6);  // Truncate and Display Character on LCD Digit 6
-      break;
-    case USCI_UART_UCTXIFG: break;
-    case USCI_UART_UCSTTIFG: break;
-    case USCI_UART_UCTXCPTIFG: break;
-    default: break;
-  }
-}
+int main(void); = Watchdog and default GPIO high-impedance mode are turned off, and the 3 ADC pins are configured. The LCD is initialized from hal_LCD.h. The 12-bit ADC is initialized, beginning on channel A5 or the first sensor, and TimerB0 is initialized. On line 87 ("TB0CCR0 = 4000;"), this number can be increased to slow down the cycle rate of the 3 displayed ADC values, or decreased to speed up the cycle rate. Low power mode is entered, and interrupts are enabled.
 ```
 
-## Copyright Disclaimer
-```c
-/* --COPYRIGHT--,BSD_EX
- * Copyright (c) 2014, Texas Instruments Incorporated
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * *  Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * *  Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * *  Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *******************************************************************************
- *
- *                       MSP430 CODE EXAMPLE DISCLAIMER
- *
- * MSP430 code examples are self-contained low-level programs that typically
- * demonstrate a single peripheral function or device feature in a highly
- * concise manner. For this the code may rely on the device's power-on default
- * register values and settings such as the clock configuration and care must
- * be taken when combining code from several examples to avoid potential side
- * effects. Also see www.ti.com/grace for a GUI- and www.ti.com/msp430ware
- * for an API functional library-approach to peripheral configuration.
- *
- * --/COPYRIGHT--*/
 ```
+void displayStatus(int sensor); = This function goes along with the Init_LCD() funtion (to enable the showChar() function) that was run from the main(void) block. The two left-most digits "S" and "1", 2, or 3 are immediately loaded. The 4 if-statements divide the 4-digit ADC value into 4 separate single-digit values; for example the 3rd-from-the-left digit on the LCD screen has the ADC_light value divided by 1000. The 4 else-statements simply output a "0" digit if the ADC_light value does not reach up to the corresponding digit. The pos# indicators in the showChar() function begin at pos1 for the left-most digit on the LCD screen, up to the maximum pos6 as the right-most digit.
+```
+
+```
+__interrupt void Timer0_B0_ISR (void); = The ADC12 conversion is enabled and started. The very next while-loop waits until the conversion is finished. The LCD screen 6-digit display is run during the timer interrupt. Three if-statements look to see which one of the 3 sensors is currently being displayed on the LCD. In the first if-statement "if(sensor==1)" and on line 131 ("sensor+=1;"), the + symbol can be removed to force the LCD to display only one sensor and stop cycling the other two, if desired. The ADC_light variable is fed the current ADC12MEM0 value, and divided by 10, 5, or 1. These divisions can be changed for tuning to the most desired ADC range that is displayed; they do not necessarily correspond to the 3 photo-sensors, but these division do the 3 readings to be relatively close to each other under the same amount of light (along with the Interface Circuits for the photoresistor/diode/transistor). Conversion of ADC12 is turned off, the sensor variable is incremented to display the next sensor's ADC12 value, and the ADC pin's voltage measurements being converted is rerouted to a new A# channel. After each if-statement is run (before going directly to the next one and cycling the displayed sensor), the timer interrupt flag is cleared and the program is run again from main(void). 
+```
+
+### Software Tools Used
+
+* [Code Composer Studio](https://dev.ti.com/) - Code compiling program (CCS). 
